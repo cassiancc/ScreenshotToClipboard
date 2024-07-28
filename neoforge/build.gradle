@@ -54,3 +54,56 @@ shadowJar {
 remapJar {
     input.set shadowJar.archiveFile
 }
+
+// TODO: infer from neoforge.mods.toml?!
+def supportedVersions = ["1.20.6", "1.21"]
+def versionSupportName = "(NeoForge 1.20.6+)"
+
+if (System.getenv("MODRINTH_TOKEN")) {
+    modrinth {
+        token = System.getenv("MODRINTH_TOKEN")
+        projectId = rootProject.modrinth_id
+        versionNumber = rootProject.mod_version + "+neoforge"
+        uploadFile = remapJar
+        gameVersions = supportedVersions
+        loaders = ["neoforge"]
+        detectLoaders = false
+        versionName = rootProject.mod_version + " " + versionSupportName
+        changelog = rootProject.ext.changelog
+    }
+
+    publish.dependsOn(tasks.named("modrinth"))
+}
+
+if (System.getenv("CURSEFORGE_TOKEN")) {
+    curseforge {
+        apiKey = System.getenv("CURSEFORGE_TOKEN")
+        project {
+            id = rootProject.curseforge_id_forge
+            releaseType = "release"
+
+            mainArtifact(remapJar) {
+                displayName = rootProject.mod_version + " " + versionSupportName
+            }
+            for (version in supportedVersions) {
+                addGameVersion(version)
+            }
+            addGameVersion("NeoForge")
+            changelog = rootProject.ext.changelog
+            changelogType = "markdown"
+        }
+    }
+
+    publish.dependsOn(tasks.named("curseforge"))
+}
+
+configurations {
+    remapJarOutput {
+        canBeConsumed = true
+        canBeResolved = false
+    }
+}
+
+artifacts {
+    remapJarOutput(remapJar) // For consumption by github release
+}

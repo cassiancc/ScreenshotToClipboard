@@ -1,5 +1,8 @@
 plugins {
     id 'com.github.johnrengelman.shadow'
+
+    id "com.modrinth.minotaur" version "2.+"
+    id "com.matthewprenger.cursegradle" version "1.4.0"
 }
 
 architectury {
@@ -55,4 +58,57 @@ shadowJar {
 
 remapJar {
     input.set shadowJar.archiveFile
+}
+
+// TODO: infer from fabric.mod.json?!
+def supportedVersions = ["1.20.6", "1.21"]
+def versionSupportName = "(Fabric 1.18+)"
+
+if (System.getenv("MODRINTH_TOKEN")) {
+    modrinth {
+        token = System.getenv("MODRINTH_TOKEN")
+        projectId = rootProject.modrinth_id
+        versionNumber = rootProject.mod_version + "+fabric"
+        uploadFile = remapJar
+        gameVersions = supportedVersions
+        loaders = ["fabric"]
+        detectLoaders = false
+        versionName = rootProject.mod_version + " " + versionSupportName
+        changelog = rootProject.ext.changelog
+    }
+
+    publish.dependsOn(tasks.named("modrinth"))
+}
+
+if (System.getenv("CURSEFORGE_TOKEN")) {
+    curseforge {
+        apiKey = System.getenv("CURSEFORGE_TOKEN")
+        project {
+            id = rootProject.curseforge_id_fabric
+            releaseType = "release"
+
+            mainArtifact(remapJar) {
+                displayName = rootProject.mod_version + " " + versionSupportName
+            }
+            for (version in supportedVersions) {
+                addGameVersion(version)
+            }
+            addGameVersion("Fabric")
+            changelog = rootProject.ext.changelog
+            changelogType = "markdown"
+        }
+    }
+
+    publish.dependsOn(tasks.named("curseforge"))
+}
+
+configurations {
+    remapJarOutput {
+        canBeConsumed = true
+        canBeResolved = false
+    }
+}
+
+artifacts {
+    remapJarOutput(remapJar) // For consumption by github release
 }
