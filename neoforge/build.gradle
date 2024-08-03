@@ -1,5 +1,8 @@
 plugins {
     id 'com.github.johnrengelman.shadow'
+
+	id "com.modrinth.minotaur" version "2.+"
+	id "com.matthewprenger.cursegradle" version "1.4.0"
 }
 
 architectury {
